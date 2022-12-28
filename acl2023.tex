@@ -154,6 +154,22 @@ sequences of actions.
 Note that this is only for documents. We will perform lower-level alignments at
 the turn-level, while keeping document selection at the full dialogue level.
 
+\subsection{VAE and Wake-sleep training}
+We perform additional experiments with an inference network to speed up training
+over full marginalization.
+We propose two objectives:
+\begin{align}
+&\log\sum_z p(x,z) - KL[q(z\mid x) || p(z \mid x)]\\
+&\log\sum_z p(x,z) - KL[p(z\mid x) || q(z \mid x)].
+\end{align}
+The first we will refer to as VAE, and the second as wake-sleep.
+We optimize the first in the standard VAE setting by optimizing a variational evidence
+lower bound with a baseline for the gradient estimator.
+For wake-sleep, we take a batch coordinate ascent approach by alternating the optimization of
+$\log\sum_{z\in Z'}p(x,z)$ with respect to $p(x,z)$ after obtaining $Z'\sim q(z\mid x)$,
+and approximating $KL[p(z \mid x) ||q(z \mid x)]$ with a biased sample-based approximation
+of $p(z \mid x)$.
+
 \section{Experimental setup}
 
 \section{Results}
@@ -204,7 +220,7 @@ but they will definitely know what the correct document is right before they tak
     \item $Z^*$ = \{true $z^*$, 3 hard lexical negatives based on $z^*$, 3 random negatives\}
     \item uniform $p(z)$
     \item BART $p(x \mid z)$
-    \item Inference via Bayes' rule: $\argmax_z p(z\mid x_{1:t})$ where $t$ is the index
+    \item Inference via Bayes' rule: $\argmax_z p(x_{1:t}|z)$ where $t$ is the index
         of the first agent action.
     \end{itemize}
 \item Full marginalization over Z: $log\sum_{z\in Z} p(x|z)p(z)$
@@ -212,7 +228,7 @@ but they will definitely know what the correct document is right before they tak
     \item all docs $Z$
     \item uniform $p(z)$
     \item BART $p(x \mid z)$
-    \item Inference via Bayes' rule: $\argmax_z p(z\mid x_{1:t})$ where $t$ is the index
+    \item Inference via Bayes' rule: $\argmax_z p(x_{1:t}|z)$ where $t$ is the index
         of the first agent action.
     \end{itemize}
 \end{itemize}
