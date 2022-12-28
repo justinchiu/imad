@@ -135,6 +135,11 @@ We perform training by optimizing the log marginal likelihood
 \log\sum_z p(x,z).
 \end{equation}
 
+We perform inference online via Bayes' rule:
+\begin{equation}
+\argmax_z p(z\mid x) = \argmax_zp(x\mid z)p(z).
+\end{equation}
+
 \textbf{Why not break down alignments at the turn-level?}
 We found that using a document to generate only the next agent turn resulted in poor
 unsupervised accuracy (degeneration to a uniform distribution).
