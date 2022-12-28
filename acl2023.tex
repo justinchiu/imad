@@ -6,6 +6,7 @@
 
 % Remove the "review" option to generate the final version.
 \usepackage[review]{ACL2023}
+\usepackage{mystyle}
 
 % Standard package includes
 \usepackage{times}
@@ -37,7 +38,7 @@
 %
 % and set <dim> to something 5cm or larger.
 
-\title{Instructions for ACL 2023 Proceedings}
+\title{interpretable methods for doc alignment in dialogue}
 
 % Author information can be set in various styles:
 % For several authors from the same institution:
@@ -78,10 +79,13 @@ customer service interactions must follow a set of guidelines for safety,
 which have a natural sequential order.
 If a customer is locked out of their account and requests a password reset,
 the agent must first verify that the customer is indeed the owner of the account.
-This if-then structure is common to flows in guidelines.
+This if-then structure is common in guidelines \cite{abcd}.
 
-Both human and robot agent must follow safety guidelines.
+All agents, whether human or robot, must follow safety guidelines.
 As a result, safety guidelines are often written in natural language.
+Natural language guidelines also allow for zero-shot generalization to scenarios
+that may be new to an agent, but described similarly in the guidelines to
+familiar scenarios.
 
 Our goal is to train dialogue agents that not only follow a set of guidelines,
 but justify their actions by pointing to the guidelines.
@@ -96,7 +100,7 @@ Experiments show that our model is accurate,
 intepretable,
 and works at a range of supervision levels.
 
-Datasets include a variety of guidelines.
+We present results on three datasets, ranging over a variety of guideline styles.
 In ABCD, the guidelines are given to us \citet{abcd}.
 In SGD, we write the guidelines ourselves,
 using the generative model to aid development.
@@ -114,11 +118,39 @@ and take advantage of the generalization abilities of large language models.
 
 
 \section{Problem setup}
-We are interested in a generative model of dialogue that justifies its actions by
-aligning to a document.
-The model first chooses its alignments $z \sim p(z)$,
+Our goal is to, given an observed task-oriented and guideline-grounded dialogue $x$
+between a customer and agent,
+justify the actions of the agent by aligning them to natural language guidelines $z$.
 
-$p(x,z) = p(x\mid z)p(z)$
+\section{Method}
+We propose a generative model of dialogue that justifies its actions by
+aligning to the guidelines.
+
+The model first chooses a document in the guideline $z \sim p(z)$,
+then generates the dialogue $x \sim p(x \mid z)$.
+This yields the joint distribution $p(x,z) = p(x\mid z)p(z)$.
+
+We perform training by optimizing the log marginal likelihood
+\begin{equation}
+\log\sum_z p(x,z).
+\end{equation}
+
+\textbf{Why not break down alignments at the turn-level?}
+We found that using a document to generate only the next agent turn resulted in poor
+unsupervised accuracy (degeneration to a uniform distribution).
+Additionally, we found that many single turns were well-explained by a large number of different
+documents.
+It is these two points that led us to consider generating full dialogues given a single document,
+so that document must explain multiple turns at once.
+This is because documents in guidelines share many common actions,
+and it is the sequencing of these actions that distinguishes them.
+Therefore modeling the whole dialogue allows the model to take into account full
+sequences of actions.
+Note that this is only for documents. We will perform lower-level alignments at
+the turn-level, while keeping document selection at the full dialogue level.
+
+\section{Experiments}
+
 
 
 \bibliography{anthology,custom}
@@ -126,9 +158,123 @@ $p(x,z) = p(x\mid z)p(z)$
 
 \appendix
 
-\section{Example Appendix}
-\label{sec:appendix}
+\section{Report and questions 2/27}
+\subsection{Research question}
+Can we do document classification in document-driven dialogue with as few document labels as possible?
 
-This is a section in the appendix.
+\subsection{Experiment}
+Unsupervised document classification with a generative model of dialogue given document.
+document accuracy $z|x$ right before first agent action.
+The first agent action will be something like pulling up the customer's account,
+at which point the agent should be following a document.
+The agent will always know what the correct document is before taking an action,
+but they will definitely know what the correct document is right before they take an action.
+
+\subsection{Models}
+\begin{itemize}
+\item Skyline: supervised $$p(z \mid x) \propto <emb(z_{label}), BERT(x)>$$
+\item Baseline: lexical BM25
+\item Approximate marginalization with $Z^*$: $\log\sum_{z\in Z*} p(x\mid z) p(z)$
+    \begin{itemize}
+    \item $Z^*$ = {true $z^*$, 3 hard lexical negatives based on $z^*$, 3 random negatives}
+    \item uniform $p(z)$
+    \item BART $p(x \mid z)$
+    \item Inference via Bayes' rule: $\argmax_z p(z\mid x_{1:t})$ where $t$ is the index
+        of the first agent action.
+    \end{itemize}
+\item Full marginalization over Z: $log\sum_{z\in Z} p(x|z)p(z)$
+    \begin{itemize}
+    \item all docs $Z$
+    \item uniform $p(z)$
+    \item BART $p(x \mid z)$
+    \item Inference via Bayes' rule: $\argmax_z p(z\mid x_{1:t})$ where $t$ is the index
+        of the first agent action.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Results}
+Skyline supervised p(z|x): 90.65%
+Baseline lexical: 34.06%
+Approx marg w/ Z*: 78.59%
+Full marg w/ Z: 74.2%
+\subsection{Conclusion}
+\begin{itemize}
+\item Full marg does better than lexical baseline
+\item Full marg does worse than approximate marg over Z*
+\end{itemize}
+
+This is surprising, since the training setup (all Z) is closer to the testing setup (all Z), as Z* is a strict subset of Z
+
+Two possible causes
+\begin{enumerate}
+\item Different hyperparameters: I had to use no batching for full marg, but didn’t sweep over hyperparams. Learning rate should scale with batch size (citation: https://arxiv.org/abs/1706.02677)
+\item There are reasonable negative documents in $Z \setminus Z*$ that have $p(x|z) > p(x|z*)$
+\end{enumerate}
+
+\subsection{Immediate next steps}
+Error analysis, comparing the things full marg got wrong but approx marg got right.
+Are there negatives that were excluded by Z*, that end up making performance worse?
+Hyperparam sweep for full marg.
+Speed up full marg with an inference network q(z|x) in the VAE setting.
+There is only enough memory on the A100s to run full marg unbatched. This slows down iteration speed and will make further modeling difficult.
+
+\subsection{Sasha questions}
+\begin{itemize}
+\item Isn't your model p(x, z)
+    \begin{itemize}
+    \item Yes, the model is $p(x\mid z)p(z)$, with $p(z)$ uniform.
+    \end{itemize}
+\item I don't really like this experiment, because it seems to test two different things:
+    1) keeping the $z^*$ in the true set, 2) approximating the marginalization.
+    A clean experiment would be Full Marginalization vs. Approx Marginalization during training.
+    The one that keeps around $Z^*$ is a skyline at best, and maybe at worst not informative.
+    \begin{itemize}
+    \item The approximate marginalization with $Z^*$ will not be included in the final results,
+        but was useful for debugging full marg and will be useful for debugging the VAE setting.
+    \item That said, this is a clean experiment. Only one thing is changed: the set of negatives.
+        Approx marg w/ $Z^*$ uses $z^*$ and some negatives,
+        while full marg uses $z^*$ and all negatives.
+        Full marg vs VAE approx marg would change both the negatives as well as whether $z^*$
+            is guaranteed to be present.
+    \end{itemize}
+\item I would like your conclusions to be a little bit more clear about things like
+    speed and methods. Is Full Marg reasonable or not?
+    \begin{itemize}
+    \item Speed: Full marg takes between 5-10 hours to reach peak validation document accuracy
+        This is reasonable for this setting, but will become a limitation in models
+        that must perform both sentence and document marginalization.
+    \item General resaonableness: Full marg is reasonable as long as it fits within memory constraints.
+        It is reasonable for this particular dataset, but may not be for the other datasets.
+    \end{itemize}
+\item The name "Approx Marg" does not really make sense here, as again approx would be a version of this with the $Z*$
+    \begin{itemize}
+    \item Approximate marginalization with $Z^*$ describes the setting $\log\sum_{z\in Z^*} p(x,z), Z^*\subset Z$.
+        Marginalization over $Z$ is approximated over the restriction $Z^*$.
+        I believe this is a precise description without jargon.
+    \end{itemize}
+\item You are much too early to worry about hyperparams, that discussion should not even be here yet.
+    \begin{itemize}
+    \item I managed to get accuracy up a few points, but nothing major. Other learning rate
+        settings resulted in very poor performance for this experiment,
+        as fine-tuning is sensitive to hyperparameters.
+    \end{itemize}
+\item I don't really get this line "This is surprising, since the training setup (all Z) is closer to the testing setup (all Z), as Z* is a strict subset of Z". This doesn't seem surprising to me?
+    \begin{itemize}
+    \item It is hard to predict whether approximate marginalization with $Z^*$
+        vs full marginalization with Z would yield a better model.
+    \item $p(x|z)$ will learn to prefer $z^*$ if $p(x|z^*)$ is better than other $p(x|z)$,
+        since the gradient of the log marginal likelihood objective is the posterior $p(z|x)$
+        and the model has a uniform $p(z)$.
+    \item When would approx marg w/ Z* do better?
+        Hypothesis 1: If Z* contains hard negatives z with p(x | z*) > p(x | z) but not negatives p(x | z*) < p(x | z), so that the model doesnt learn to prefer those hard negatives over the true z*
+        When would approx marg w/ Z* do worse?
+        Hypothesis 2: If Z* misses some hard negatives with p(x | z*) > p(x | z)
+        This means the result of approx marg w/ Z* is currently not informative in terms of comparison to full marginalization, without further error analysis that verifies Hypothesis 1.
+    \end{itemize}
+\item please provide a section in these documents with "parameterization". Is $p(z)$ parameterized?
+    \begin{itemize}
+    \item $p(z)$ is uniform and therefore has no learnable parameters.
+    \end{itemize}
+\end{itemize}
 
 \end{document}
