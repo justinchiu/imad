@@ -213,7 +213,7 @@ but they will definitely know what the correct document is right before they tak
 
 \subsection{Models}
 \begin{itemize}
-\item Skyline: supervised $$p(z \mid x) \propto <emb(z_{label}), BERT(x)>$$
+\item Skyline: supervised $$p(z \mid x) \propto \langle emb(z_{label}), BERT(x)\rangle$$
 \item Baseline: lexical BM25
 \item Approximate marginalization with $Z^*$: $\log\sum_{z\in Z*} p(x\mid z) p(z)$
     \begin{itemize}
