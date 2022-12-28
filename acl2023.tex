@@ -149,8 +149,28 @@ sequences of actions.
 Note that this is only for documents. We will perform lower-level alignments at
 the turn-level, while keeping document selection at the full dialogue level.
 
-\section{Experiments}
+\section{Experimental setup}
 
+\section{Results}
+
+\begin{table}
+\centering
+\begin{tabular}{lrr}
+\toprule
+model & $N$ & doc acc\\
+\midrule
+Skyline supervised $p(z|x)$ & All & 90.65\\
+Baseline lexical & 0 & 34.06\\
+$p(x,z)$ & 0 & 74.2\\
+$p(x,z)$ & 50 & -\\
+$p(x,z)$ & 100 & -\\
+\bottomrule
+\end{tabular}
+\caption{
+\label{tbl:unsup-doc}
+Results for document classification with a generative model.
+$N$ is the number of labeled examples seen during training.}
+\end{table}
 
 
 \bibliography{anthology,custom}
@@ -158,7 +178,7 @@ the turn-level, while keeping document selection at the full dialogue level.
 
 \appendix
 
-\section{Report and questions 2/27}
+\section{Report and questions 12/27}
 \subsection{Research question}
 Can we do document classification in document-driven dialogue with as few document labels as possible?
 
@@ -176,7 +196,7 @@ but they will definitely know what the correct document is right before they tak
 \item Baseline: lexical BM25
 \item Approximate marginalization with $Z^*$: $\log\sum_{z\in Z*} p(x\mid z) p(z)$
     \begin{itemize}
-    \item $Z^*$ = {true $z^*$, 3 hard lexical negatives based on $z^*$, 3 random negatives}
+    \item $Z^*$ = \{true $z^*$, 3 hard lexical negatives based on $z^*$, 3 random negatives\}
     \item uniform $p(z)$
     \item BART $p(x \mid z)$
     \item Inference via Bayes' rule: $\argmax_z p(z\mid x_{1:t})$ where $t$ is the index
@@ -193,30 +213,47 @@ but they will definitely know what the correct document is right before they tak
 \end{itemize}
 
 \subsection{Results}
-Skyline supervised p(z|x): 90.65%
-Baseline lexical: 34.06%
-Approx marg w/ Z*: 78.59%
-Full marg w/ Z: 74.2%
-\subsection{Conclusion}
+
+\begin{table}
+\centering
+\begin{tabular}{lr}
+\toprule
+model & acc\\
+\midrule
+Skyline supervised $p(z|x)$ & 90.65\\
+Baseline lexical & 34.06\\
+Approx marg w/ Z* & 78.59\\
+Full marg w/ Z & 74.2\\
+\bottomrule
+\end{tabular}
+\caption{
+\label{tbl:unsup-doc-app}
+Results for document classification with a generative model.}
+\end{table}
+
+See table \ref{tbl:unsup-doc-app}.
+
 \begin{itemize}
 \item Full marg does better than lexical baseline
 \item Full marg does worse than approximate marg over Z*
 \end{itemize}
-
-This is surprising, since the training setup (all Z) is closer to the testing setup (all Z), as Z* is a strict subset of Z
+This is surprising, since the training setup (all $Z$) is closer to the testing setup (all $Z$),
+as $Z^*\subset Z$.
 
 Two possible causes
 \begin{enumerate}
 \item Different hyperparameters: I had to use no batching for full marg, but didn’t sweep over hyperparams. Learning rate should scale with batch size (citation: https://arxiv.org/abs/1706.02677)
-\item There are reasonable negative documents in $Z \setminus Z*$ that have $p(x|z) > p(x|z*)$
+\item There are reasonable negative documents in $Z \setminus Z^*$ that have $p(x|z) > p(x|z^*)$
 \end{enumerate}
 
 \subsection{Immediate next steps}
-Error analysis, comparing the things full marg got wrong but approx marg got right.
-Are there negatives that were excluded by Z*, that end up making performance worse?
+\begin{itemize}
+\item Error analysis, comparing the things full marg got wrong but approx marg got right.
+\item Are there negatives that were excluded by Z*, that end up making performance worse?
 Hyperparam sweep for full marg.
-Speed up full marg with an inference network q(z|x) in the VAE setting.
+\item Speed up full marg with an inference network q(z|x) in the VAE setting.
 There is only enough memory on the A100s to run full marg unbatched. This slows down iteration speed and will make further modeling difficult.
+\end{itemize}
 
 \subsection{Sasha questions}
 \begin{itemize}
@@ -244,7 +281,7 @@ There is only enough memory on the A100s to run full marg unbatched. This slows 
         This is reasonable for this setting, but will become a limitation in models
         that must perform both sentence and document marginalization.
     \item General resaonableness: Full marg is reasonable as long as it fits within memory constraints.
-        It is reasonable for this particular dataset, but may not be for the other datasets.
+        It is reasonable for this dataset, but may not be for the other datasets.
     \end{itemize}
 \item The name "Approx Marg" does not really make sense here, as again approx would be a version of this with the $Z*$
     \begin{itemize}
@@ -266,10 +303,11 @@ There is only enough memory on the A100s to run full marg unbatched. This slows 
         since the gradient of the log marginal likelihood objective is the posterior $p(z|x)$
         and the model has a uniform $p(z)$.
     \item When would approx marg w/ Z* do better?
-        Hypothesis 1: If Z* contains hard negatives z with p(x | z*) > p(x | z) but not negatives p(x | z*) < p(x | z), so that the model doesnt learn to prefer those hard negatives over the true z*
-        When would approx marg w/ Z* do worse?
-        Hypothesis 2: If Z* misses some hard negatives with p(x | z*) > p(x | z)
-        This means the result of approx marg w/ Z* is currently not informative in terms of comparison to full marginalization, without further error analysis that verifies Hypothesis 1.
+        If $Z^*$ contains hard negatives $z$ with $p(x | z^*) > p(x | z)$ but not negatives $p(x | z^*) < p(x | z)$,
+        so that the model doesnt learn to prefer those hard negatives over the true $z^*$.
+        This seems to be the case here.
+    \item When would approx marg w/ $Z^*$ do worse?
+        If $Z^*$ misses some hard negatives with $p(x | z^*) > p(x | z)$.
     \end{itemize}
 \item please provide a section in these documents with "parameterization". Is $p(z)$ parameterized?
     \begin{itemize}
