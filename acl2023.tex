@@ -170,6 +170,45 @@ $\log\sum_{z\in Z'}p(x,z)$ with respect to $p(x,z)$ after obtaining $Z'\sim q(z\
 and approximating $KL[p(z \mid x) ||q(z \mid x)]$ with a biased sample-based approximation
 of $p(z \mid x)$.
 
+\section{Span alignments}
+Assert no multi-hop.
+
+\begin{figure}[t]
+\begin{center}
+\scalebox{.85}{
+\begin{tikzpicture}
+
+\node[latent] (z) {$z$};
+\node[latent, below=of z] (a1) {$a_1$};
+\node[latent, right=of a1] (a2) {$a_2$};
+\node[latent, right=of a2] (a3) {$a_3$};
+\node[obs, below=of a1] (x1) {$x_1$};
+\node[obs, below=of a2] (x2) {$x_2$};
+\node[obs, below=of a3] (x3) {$x_3$};
+
+\edge[->] {z} {a1};
+\edge[->] {z} {a2};
+\edge[->] {z} {a3};
+
+\edge[->] {a1} {a2};
+\edge[->] {a2} {a3};
+
+\edge[->] {a1} {x1};
+\edge[->] {a2} {x2};
+\edge[->] {a3} {x3};
+
+\edge[->] {x1} {x2};
+\draw[->] (x1) to[bend right=30] (x3);
+\edge[->] {x2} {x3};
+
+\end{tikzpicture}
+}
+\end{center}
+\caption{Graphical model for full document and span alignments.
+}
+\label{fig:pgm-sent}
+\end{figure}
+
 \section{Experimental setup}
 
 \section{Results}
