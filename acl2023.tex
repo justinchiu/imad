@@ -163,12 +163,17 @@ We propose two objectives:
 &\log\sum_z p(x,z) - KL[p(z\mid x) || q(z \mid x)].
 \end{align}
 The first we will refer to as VAE, and the second as wake-sleep.
-We optimize the first in the standard VAE setting by optimizing a variational evidence
+We optimize the first in the standard VAE setting by optimizing the usual variational evidence
 lower bound with a baseline for the gradient estimator.
-For wake-sleep, we take a batch coordinate ascent approach by alternating the optimization of
-$\log\sum_{z\in Z'}p(x,z)$ with respect to $p(x,z)$ after obtaining $Z'\sim q(z\mid x)$,
-and approximating $KL[p(z \mid x) ||q(z \mid x)]$ with a biased sample-based approximation
-of $p(z \mid x)$.
+For wake-sleep, we make the following approximations:
+approximate the reconstruction term
+\begin{align*}
+\log\sum_z p(x,z) &\approx \log\sum_{z\in Z} p(x,z)\\
+KL[p(z\mid x) || q(z \mid x)] &\approx KL[\tilde{p}(z\mid x) || \tilde{q}(z \mid x)]\\
+\tilde{p}(z\mid x) = \frac{p(x,z)}{\sum_{z \in Z} p(x,z)}\\
+\tilde{q}(z\mid x) = \frac{q(z\mid x)}{\sum_{z \in Z} q(z\mid x)},
+\end{align*}
+so that $\tilde{p},\tilde{q}$ are only normalized over $Z = \text{argtopk} q(z\mid x)$.
 
 \section{Span alignments}
 Assert no multi-hop.
@@ -282,13 +287,14 @@ model & acc\\
 \midrule
 Skyline supervised $p(z|x)$ & 90.65\\
 Baseline lexical & 34.06\\
-Approx marg w/ Z* & 78.59\\
-Full marg w/ Z & 74.2\\
+Approx marg w/ $Z^*$ & 80.18\\
+Full marg w/ $Z$ & 74.2\\
 \bottomrule
 \end{tabular}
 \caption{
 \label{tbl:unsup-doc-app}
-Results for document classification with a generative model.}
+Results for document classification with a generative model at the first
+agent action in a conversation.}
 \end{table}
 
 See table \ref{tbl:unsup-doc-app}.
