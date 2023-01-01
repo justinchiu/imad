@@ -166,7 +166,6 @@ The first we will refer to as VAE, and the second as wake-sleep.
 We optimize the first in the standard VAE setting by optimizing the usual variational evidence
 lower bound with a baseline for the gradient estimator.
 For wake-sleep, we make the following approximations:
-approximate the reconstruction term
 \begin{align*}
 \log\sum_z p(x,z) &\approx \log\sum_{z\in Z} p(x,z)\\
 KL[p(z\mid x) || q(z \mid x)] &\approx KL[\tilde{p}(z\mid x) || \tilde{q}(z \mid x)]\\
@@ -174,6 +173,12 @@ KL[p(z\mid x) || q(z \mid x)] &\approx KL[\tilde{p}(z\mid x) || \tilde{q}(z \mid
 \tilde{q}(z\mid x) &= \frac{q(z\mid x)}{\sum_{z \in Z} q(z\mid x)},
 \end{align*}
 so that $\tilde{p},\tilde{q}$ are only normalized over $Z = \text{argtopk} q(z\mid x)$.
+
+\section{Parameterization}
+We parameterize $p(x\mid z)$ with a sequence to sequence model such as BART.
+The prior $p(z)$ is a uniform distribution.
+The inference network $q(z \mid x) \propto \langle\text{enc}(x),\text{enc}(z)\rangle$
+encodes $x,z$ with a transformer such as RoBERTa.
 
 \section{Span alignments}
 Assert no multi-hop.
