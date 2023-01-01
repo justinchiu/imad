@@ -170,8 +170,8 @@ approximate the reconstruction term
 \begin{align*}
 \log\sum_z p(x,z) &\approx \log\sum_{z\in Z} p(x,z)\\
 KL[p(z\mid x) || q(z \mid x)] &\approx KL[\tilde{p}(z\mid x) || \tilde{q}(z \mid x)]\\
-\tilde{p}(z\mid x) = \frac{p(x,z)}{\sum_{z \in Z} p(x,z)}\\
-\tilde{q}(z\mid x) = \frac{q(z\mid x)}{\sum_{z \in Z} q(z\mid x)},
+\tilde{p}(z\mid x) &= \frac{p(x,z)}{\sum_{z \in Z} p(x,z)}\\
+\tilde{q}(z\mid x) &= \frac{q(z\mid x)}{\sum_{z \in Z} q(z\mid x)},
 \end{align*}
 so that $\tilde{p},\tilde{q}$ are only normalized over $Z = \text{argtopk} q(z\mid x)$.
 
