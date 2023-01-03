@@ -154,25 +154,31 @@ sequences of actions.
 Note that this is only for documents. We will perform lower-level alignments at
 the turn-level, while keeping document selection at the full dialogue level.
 
-\subsection{VAE and Wake-sleep training}
+\subsection{Wake-sleep training}
 We perform additional experiments with an inference network to speed up training
 over full marginalization.
-We propose two objectives:
-\begin{align}
-&\log\sum_z p(x,z) - KL[q(z\mid x) || p(z \mid x)]\\
-&\log\sum_z p(x,z) - KL[p(z\mid x) || q(z \mid x)].
-\end{align}
-The first we will refer to as VAE, and the second as wake-sleep.
-We optimize the first in the standard VAE setting by optimizing the usual variational evidence
-lower bound with a baseline for the gradient estimator.
-For wake-sleep, we make the following approximations:
+We propose the following objective:
+\begin{equation}
+\log\sum_z p(x,z) - KL[p(z\mid x) || q(z \mid x)].
+\end{equation}
+In order to speed up training, we make the following approximations:
 \begin{align*}
-\log\sum_z p(x,z) &\approx \log\sum_{z\in Z} p(x,z)\\
+\log\sum_z p(x,z) &\approx \log\sum_{z\in Z'} p(x,z)\\
 KL[p(z\mid x) || q(z \mid x)] &\approx KL[\tilde{p}(z\mid x) || \tilde{q}(z \mid x)]\\
 \tilde{p}(z\mid x) &= \frac{p(x,z)}{\sum_{z \in Z} p(x,z)}\\
 \tilde{q}(z\mid x) &= \frac{q(z\mid x)}{\sum_{z \in Z} q(z\mid x)},
 \end{align*}
-so that $\tilde{p},\tilde{q}$ are only normalized over $Z = \text{argtopk} q(z\mid x)$.
+so that $\tilde{p},\tilde{q}$ are only normalized over $Z' = \text{argtopk} q(z\mid x)$.
+Note that this topk operation is not differentiable.
+
+\paragraph{Why not VAE training?} We found VAE training with the usual ELBO
+required a baseline and achieved worse accuracy even with a leave-one-out baseline.
+We hypothesize that this is because the wake-sleep objectiven naturally uses a
+\href{https://github.com/justinchiu/elbos-baselines}{regret baseline},
+while the VAE baseline can be interpreted as the advantage.
+Additionally, the VAE objective optimizes reverse KL, which may be worse than
+the forward KL in this case, since we an uncalibrated $q$ may ruin training
+by becoming overconfident about an incorrect $z$.
 
 \section{Parameterization}
 We parameterize $p(x\mid z)$ with a sequence to sequence model such as BART.
@@ -219,36 +225,7 @@ Assert no multi-hop.
 \label{fig:pgm-sent}
 \end{figure}
 
-\section{Experimental setup}
-
-\section{Results}
-
-\begin{table}
-\centering
-\begin{tabular}{lrr}
-\toprule
-model & $N$ & doc acc\\
-\midrule
-Skyline supervised $p(z|x)$ & All & 90.65\\
-Baseline lexical & 0 & 34.06\\
-$p(x,z)$ & 0 & 74.2\\
-$p(x,z)$ & 50 & -\\
-$p(x,z)$ & 100 & -\\
-\bottomrule
-\end{tabular}
-\caption{
-\label{tbl:unsup-doc}
-Results for document classification with a generative model.
-$N$ is the number of labeled examples seen during training.}
-\end{table}
-
-
-\bibliography{anthology,custom}
-\bibliographystyle{acl_natbib}
-
-\appendix
-
-\section{Report and questions 12/27}
+\section{Experiment 1: Document classification from observed dialogue + action output}
 \subsection{Research question}
 Can we do document classification in document-driven dialogue with as few document labels as possible?
 
@@ -279,6 +256,11 @@ but they will definitely know what the correct document is right before they tak
     \item BART $p(x \mid z)$
     \item Inference via Bayes' rule: $\argmax_z p(x_{1:t}|z)$ where $t$ is the index
         of the first agent action.
+    \end{itemize}
+\item Approximate marginalization with $q(z\mid x)$:
+    $log\sum_{z\in Z'} p(x|z)p(z) - KL[\tilde{p}(z\mid x)||\tilde{q}(z\mid x)]$
+    \begin{itemize}
+    \item 
     \end{itemize}
 \end{itemize}
 
@@ -385,5 +367,34 @@ There is only enough memory on the A100s to run full marg unbatched. This slows 
     \item $p(z)$ is uniform and therefore has no learnable parameters.
     \end{itemize}
 \end{itemize}
+
+\section{Experimental setup}
+
+\section{Results}
+
+\begin{table}
+\centering
+\begin{tabular}{lrr}
+\toprule
+model & $N$ & doc acc\\
+\midrule
+Skyline supervised $p(z|x)$ & All & 90.65\\
+Baseline lexical & 0 & 34.06\\
+$p(x,z)$ & 0 & 74.2\\
+$p(x,z)$ & 50 & -\\
+$p(x,z)$ & 100 & -\\
+\bottomrule
+\end{tabular}
+\caption{
+\label{tbl:unsup-doc}
+Results for document classification with a generative model.
+$N$ is the number of labeled examples seen during training.}
+\end{table}
+
+
+\bibliography{anthology,custom}
+\bibliographystyle{acl_natbib}
+
+\appendix
 
 \end{document}
