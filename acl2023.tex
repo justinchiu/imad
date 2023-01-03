@@ -332,6 +332,14 @@ We report accuracy on $d|x$ at the first agent action.
 \item Approx marg w/ top16 $q(d|x)$ with $\set{10,50,100}$ $d$ labels
 \end{itemize}
 
+Ways of utilizing labeled examples:
+\begin{itemize}
+\item Warm start: Train $p$ and $q$ on these labeled examples
+\item Interleave: Every $M$ steps, train $p$ and $q$ on these examples
+\end{itemize}
+In order to prevent overfitting to the labeled examples, we use interleaving
+(find citation for KL reg / semisup).
+
 \subsection{Results}
 In table \ref{tbl:semisup-doc}, we see that TBD
 
@@ -354,11 +362,38 @@ Results for document classification with a generative model.
 $N$ is the number of labeled examples seen during training.}
 \end{table}
 
+\section{Experiment 3: Span alignment}
+\subsection{Question}
+When writing a manual, we need at least one labeled example for each document in the manual.
+How many labeled examples do we need to recover supervised performance?
+
+
+\subsection{Results}
+\begin{table}
+\centering
+\begin{tabular}{lrr}
+\toprule
+model & $N$ & span acc\\
+\midrule
+Baseline BM25 & 0 & -\\
+Approx marg w/ top16 $q(a|x,d)$ & 0 & -\\
+Approx marg w/ top16 $q(a|x,d)$ & 10 & -\\
+Approx marg w/ top16 $q(a|x,d)$ & 50 & -\\
+\bottomrule
+\end{tabular}
+\caption{
+\label{tbl:unsup-span}
+Results for document classification with a generative model.
+$N$ is the number of labeled examples seen during training.}
+\end{table}
+
+\section{Experiment 4: Downstream AST accuracy}
+
+\section{Experiment 5: Downstream response generation}
+
 \section{Experimental setup}
 
 \section{Results}
-
-
 
 \bibliography{anthology,custom}
 \bibliographystyle{acl_natbib}
