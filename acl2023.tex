@@ -124,24 +124,24 @@ Reading manuals for generalization (RTFM, Kartik's work).
 \section{Problem setup}
 Our goal is to, given an observed task-oriented and guideline-grounded dialogue $x$
 between a customer and agent,
-justify the actions of the agent by aligning them to natural language guidelines $z$.
+justify the actions of the agent by aligning them to natural language guidelines $d$.
 
 \section{Method}
 We propose a generative model of dialogue that justifies its actions by
 aligning to the guidelines.
 
-The model first UNIFORMLY chooses a document in the guideline $z \sim p(z)$,
-then generates the dialogue $x \sim p(x \mid z)$.
-This yields the joint distribution $p(x,z) = p(x\mid z)p(z)$.
+The model first UNIFORMLY chooses a document in the guideline $d \sim p(d)$,
+then generates the dialogue $x \sim p(x \mid d)$.
+This yields the joint distribution $p(x,d) = p(x\mid d)p(d)$.
 
 We perform training by optimizing the log marginal likelihood
 \begin{equation}
-\log\sum_z p(x,z).
+\log\sum_d p(x,d).
 \end{equation}
 
 We perform inference online via Bayes' rule:
 \begin{equation}
-\argmax_z p(z\mid x) = \argmax_zp(x\mid z)p(z).
+\argmax_d p(d\mid x) = \argmax_d p(x\mid d)p(d).
 \end{equation}
 
 \textbf{Why not break down alignments at the turn-level?}
@@ -159,21 +159,21 @@ Note that this is only for documents. We will perform lower-level alignments at
 the turn-level, while keeping document selection at the full dialogue level.
 
 \subsection{Approximate inference in training}
-We perform additional experiments with an inference network to speed up training
+We perform additional experiments with an inference network $q(d|x)$ to speed up training
 over full marginalization.
 We propose the following objective:
 \begin{equation}
-\log\sum_z p(x,z) - KL[p(z\mid x) || q(z \mid x)].
+\log\sum_d p(x,d) - KL[p(d\mid x) || q(d \mid x)].
 \end{equation}
 In order to speed up training, we make the following approximations:
 \begin{align*}
-\log\sum_z p(x,z) &\approx \log\sum_{z\in \tilde{Z}} p(x,z)\\
-KL[p(z\mid x) || q(z \mid x)] &\approx KL[\tilde{p}(z\mid x) || \tilde{q}(z \mid x)]\\
-\tilde{p}(z\mid x) &= \frac{p(x,z)}{\sum_{z \in \tilde{Z}} p(x,z)}\\
-\tilde{q}(z\mid x) &= \frac{q(z\mid x)}{\sum_{z \in \tilde{Z}} q(z\mid x)},
+\log\sum_d p(x,d) &\approx \log\sum_{d\in \tilde{D}} p(x,d)\\
+KL[p(d\mid x) || q(d \mid x)] &\approx KL[\tilde{p}(d\mid x) || \tilde{q}(d \mid x)]\\
+\tilde{p}(d\mid x) &= \frac{p(x,d)}{\sum_{d \in \tilde{D}} p(x,d)}\\
+\tilde{q}(d\mid x) &= \frac{q(d\mid x)}{\sum_{d \in \tilde{D}} q(d\mid x)},
 \end{align*}
 so that $\tilde{p},\tilde{q}$ are only normalized over
-$\tilde{Z} = \text{argtopk } q(z\mid x)$.
+$\tilde{D} = \text{argtopk } q(d\mid x)$.
 Note that this topk operation is not differentiable.
 
 \paragraph{Why not VAE training?} We found VAE training with the usual ELBO
@@ -183,15 +183,15 @@ We hypothesize that this is because the wake-sleep objectiven naturally uses a
 while the VAE baseline can be interpreted as the advantage.
 Additionally, the VAE objective optimizes reverse KL, which may be worse than
 the forward KL in this case, since we an uncalibrated $q$ may ruin training
-by becoming overconfident about an incorrect $z$.
+by becoming overconfident about an incorrect $d$.
 
 \paragraph{Relation to wake sleep} Wake-phase updates only.
 
 \section{Parameterization}
-We parameterize $p(x|z)$ with a sequence to sequence model such as BART.
-The prior $p(z)$ is a uniform distribution.
-The inference network $q(z|x) \propto \langle\text{enc}(x),\text{enc}(z)\rangle$
-encodes $x,z$ with a transformer such as RoBERTa.
+We parameterize $p(x|d)$ with a sequence to sequence model such as BART.
+The prior $p(d)$ is a uniform distribution.
+The inference network $q(d|x) \propto \langle\text{enc}(x),\text{enc}(d)\rangle$
+encodes $x,d$ with a transformer such as RoBERTa.
 
 \section{Span alignments}
 Assert no multi-hop.
@@ -201,17 +201,17 @@ Assert no multi-hop.
 \scalebox{.85}{
 \begin{tikzpicture}
 
-\node[latent] (z) {$z$};
-\node[latent, below=of z] (a1) {$a_1$};
+\node[latent] (d) {$d$};
+\node[latent, below=of d] (a1) {$a_1$};
 \node[latent, right=of a1] (a2) {$a_2$};
 \node[latent, right=of a2] (a3) {$a_3$};
 \node[obs, below=of a1] (x1) {$x_1$};
 \node[obs, below=of a2] (x2) {$x_2$};
 \node[obs, below=of a3] (x3) {$x_3$};
 
-\edge[->] {z} {a1};
-\edge[->] {z} {a2};
-\edge[->] {z} {a3};
+\edge[->] {d} {a1};
+\edge[->] {d} {a2};
+\edge[->] {d} {a3};
 
 \edge[->] {a1} {a2};
 \edge[->] {a2} {a3};
@@ -234,35 +234,35 @@ Assert no multi-hop.
 
 \section{Experiment 1: Document classification from observed dialogue + action output}
 \subsection{Research question}
-Can we do document classification in document-driven dialogue with as few document labels as possible?
+Can we do document classification in document-driven dialogue with no document labels?
 
 \subsection{Experiment}
 We present experiments on
 unsupervised document classification with a generative model of dialogue given document.
-We evaluate the document accuracy $z|x$ right before first agent action.
+We evaluate the document accuracy $d|x$ right before first agent action.
 An example of the first agent action is pulling up the customer's account,
 at which point the agent should be following a specific document in the guidelines.
 The agent should know what the correct document is before taking an action.
 
 \subsection{Models}
 \begin{itemize}
-\item Skyline: supervised $$p(z \mid x) \propto \langle \text{emb}(z_{label}), \text{BERT}(x)\rangle$$
+\item Skyline: supervised $$p(d \mid x) \propto \langle \text{emb}(d_{label}), \text{BERT}(x)\rangle$$
 \item Baseline: lexical BM25
-\item Approximate marginalization with $Z^*$: $\log\sum_{z\in Z^*} p(x\mid z) p(z)$
+\item Approximate marginalization with $D^*$: $\log\sum_{d\in D^*} p(x\mid d) p(d)$
     \begin{itemize}
-    \item $Z^*$ = \{true $z^*$, 3 hard lexical negatives based on $z^*$, 3 random negatives\}
-    \item Inference via Bayes' rule: $\argmax_z p(x_{1:t}|z)$ where $t$ is the index
+    \item $D^*$ = \{true $d^*$, 3 hard lexical negatives based on $d^*$, 3 random negatives\}
+    \item Inference via Bayes' rule: $\argmax_d p(x_{1:t}|d)$ where $t$ is the index
         of the first agent action.
     \end{itemize}
-\item Full marginalization over Z: $\log\sum_{z\in Z} p(x|z)p(z)$
+\item Full marginalization over D: $\log\sum_{d\in D} p(x|d)p(d)$
     \begin{itemize}
-    \item all docs $Z$
+    \item all docs $D$
     \item Inference via Bayes' rule
     \end{itemize}
-\item Approximate marginalization with $q(z\mid x)$:
-    $\log\sum_{z\in \tilde{Z}} p(x|z)p(z) - KL[\tilde{p}(z\mid x)||\tilde{q}(z\mid x)]$
+\item Approximate marginalization with $q(d\mid x)$:
+    $\log\sum_{d\in \tilde{D}} p(x|d)p(d) - KL[\tilde{p}(d\mid x)||\tilde{q}(d\mid x)]$
     \begin{itemize}
-    \item $\tilde{Z}$ from top16 $q(z|x)$
+    \item $\tilde{D}$ from top16 $q(d|x)$
     \item Inference via Bayes'
     \end{itemize}
 \end{itemize}
@@ -275,11 +275,11 @@ The agent should know what the correct document is before taking an action.
 \toprule
 model & acc & time\\
 \midrule
-Skyline supervised $p(z|x)$ & 90.7 & -\\
+Skyline supervised $p(d|x)$ & 90.7 & -\\
 Baseline lexical & 34.1 & -\\
-Approx marg w/ $Z^*$ & 78 & 6h\\
-Full marg w/ $Z$ & 71.8 & 20h\\
-Approx marg w/ top16 $q(z\mid x)$ & 75.8 & 14h\\
+Approx marg w/ $D^*$ & 78 & 6h\\
+Full marg w/ $D$ & 71.8 & 20h\\
+Approx marg w/ top16 $q(d\mid x)$ & 75.8 & 14h\\
 \bottomrule
 \end{tabular}
 \caption{
@@ -294,17 +294,17 @@ In table \ref{tbl:unsup-doc-app}, we see that
 \item Approximate marg with $q$ does better than full marg, but worse than approximate marg over Z*.
 \end{itemize}
 The approximate marg w/ Z* doing best is surprising,
-since the training setup of full marg (all $Z$) is closer to the testing setup (all $Z$),
-as $Z^*\subset Z$.
+since the training setup of full marg (all $D$) is closer to the testing setup (all $D$),
+as $D^*\subset D$.
 
 There are a few possible causes
 \begin{enumerate}
-\item There are reasonable negative documents in $Z \setminus Z^*$ that have $p(x|z) > p(x|z^*)$
-\item The gradient will be larger for $Z^*$ since it is smaller, meaning the support will be smaller
+\item There are reasonable negative documents in $D \setminus D^*$ that have $p(x|d) > p(x|d^*)$
+\item The gradient will be larger for $D^*$ since it is smaller, meaning the support will be smaller
     and the posterior will be sharper (gradient = posterior).
 \end{enumerate}
 Error analysis found the the model does make mistakes in full marg and approx marg with $q$
-due to the existence of distracting negatives not considered in $Z^*$.
+due to the existence of distracting negatives not considered in $D^*$.
 However, there are also other errors in approx marg with $q$ that are not explained by this.
 
 \subsection{Model selection}
@@ -316,21 +316,36 @@ This results in a decent amount of overfitting, meaning the presented results ar
 highest accuracies over the course of training.
 
 \section{Experiment 2: Semi-supervised document classificaiton}
+\subsection{Question}
+When writing a manual, we need at least one labeled example for each document in the manual.
+How many labeled examples do we need to recover supervised performance?
 
+\subsection{Experiment}
+We perform early document detection in the semi-supervised setting,
+where we have 50 paired $(x,d)$ examples, and the remaining examples only have access to $x$.
+We report accuracy on $d|x$ at the first agent action.
 
+\subsection{Models}
+\begin{itemize}
+\item Skyline: fully supervised $p(d|x)$
+\item Baseline: Approx marg w/ $q(d|x)$ with no $d$ labels
+\item Approx marg w/ top16 $q(d|x)$ with $\set{10,50,100}$ $d$ labels
+\end{itemize}
 
 \subsection{Results}
+In table \ref{tbl:semisup-doc}, we see that TBD
+
 \begin{table}
 \centering
 \begin{tabular}{lrr}
 \toprule
 model & $N$ & doc acc\\
 \midrule
-Skyline supervised $p(z|x)$ & All & 90.65\\
-Baseline lexical & 0 & 34.06\\
-$p(x,z)$ & 0 & 74.2\\
-$p(x,z)$ & 50 & -\\
-$p(x,z)$ & 100 & -\\
+Skyline supervised $p(d|x)$ & All & 90.65\\
+Approx marg w/ top16 $q(d|x)$ & 0 & 74.2\\
+Approx marg w/ top16 $q(d|x)$ & 10 & -\\
+Approx marg w/ top16 $q(d|x)$ & 50 & -\\
+Approx marg w/ top16 $q(d|x)$ & 100 & -\\
 \bottomrule
 \end{tabular}
 \caption{
