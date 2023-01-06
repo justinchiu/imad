@@ -185,8 +185,8 @@ is not differentiable.
 \paragraph{Why not VAE training?} We found VAE training with the usual ELBO
 required a baseline and achieved worse accuracy with a leave-one-out baseline.
 There are two differences:
-First, the gradient of our objective naturally has a
-\href{https://github.com/justinchiu/elbos-baselines}{regret baseline},
+First, the gradient of our objective naturally has an
+\href{https://github.com/justinchiu/elbos-baselines}{exponentiated regret baseline},
 while the leave-one-out baseline can be interpreted as the advantage.
 Second, the VAE objective optimizes reverse KL, which has
 been shown to work worse than the forward KL \cite{fkl}.
