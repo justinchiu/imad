@@ -127,7 +127,7 @@ aligning to the guidelines as a whole, without sentence alignments.
 We call this model Doc2Dialogue.
 
 The model first UNIFORMLY chooses a document in the guideline $d \sim p(d)$,
-then generates the dialogue $x \sim p(x \mid d)$.
+then generates the dialogue $x \sim p(x \mid d)$ using a seq2seq model.
 This yields the joint distribution $p(x,d) = p(x\mid d)p(d)$.
 
 We perform training by optimizing the log marginal likelihood
