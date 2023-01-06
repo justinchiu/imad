@@ -136,8 +136,9 @@ We perform training by optimizing the log marginal likelihood
 
 We perform inference online via Bayes' rule:
 \begin{equation}
-\argmax_d p(d\mid x) = \argmax_d p(x\mid d)p(d).
+\argmax_d p(d\mid x) = \argmax_d p(x\mid d)p(d),
 \end{equation}
+which allows us to make predictions for any prefix of $x$.
 
 \textbf{Why not choose document alignments iid at every agent turn?}
 We found that using a document to generate only the next agent turn resulted in poor
@@ -249,12 +250,39 @@ The number of labeled training examples is $N$.}
 
 In table \ref{tbl:unsup-doc}, we see that both full marginalization and approximate inference
 outperform the lexical baseline, but do not reach the supervised skyline.
-One caveat is that a portion of the documents in the guidelines are lexically identical to one
+One cause of this is that a portion of the documents in the guidelines are lexically identical to one
 another, resulting in a performance drop for the unsupervised models.
 The supervised skyline does not use the documents themselves and therefore does not
 suffer from this issue.
+Additionally, the unsupervised model has issues distinguishing between similar
+documents, such as changing the name of an account versus changing the address.
 
 \section{Method 2: Dialogue, sentence given document}
+The next step is to model sentence alignments given the oracle document.
+We start with a very simple alignment model,
+which breaks up the dialogue into turns $x = (x_1,\ldots,x_T)$.
+For every turn, we first choose an alignment uniformly $p(z_t|d)$,
+then generates the utterance for that turn $p(x_t|x_{<t}, z_t)$ using BART
+(the encoder input tokens are given by $z_t$ and decoder input tokens by $x_{<t}$).
+The graphical model is given in figure \ref{fig:pgm-sent1}.
+
+We directly optimize the marginal likelihood
+\begin{equation}
+\begin{aligned}
+&\log p(x_{1:T}\mid d)\\
+&= \log \prod_t \sum_{zt} p(x_t \mid x_{<t}, z_t) p(z_t\mid d).
+\end{aligned}
+\end{equation}
+\footnote{A natural extension of this model is to instead model $p(z_t|x_{<t},d)$,
+we can approximate the marginal likelihood by taking the top-k elements of this
+more informative prior.}
+
+For each turn, we perform inference via Bayes' rule
+\begin{equation}
+\argmax_{z_t} p(z_t \mid x, d) = \argmax_{z_t} p(x_t \mid x_{<t}, z_t)p(z_t\mid d),
+\end{equation}
+where $p(z_t|d)$ is uniform and can be dropped.
+
 \begin{figure}[t]
 \begin{center}
 \scalebox{.85}{
@@ -288,8 +316,11 @@ suffer from this issue.
 \end{center}
 \caption{Graphical model for the first approach to sentence alignment.
 }
-\label{fig:pgm-sent}
+\label{fig:pgm-sent1}
 \end{figure}
+
+\subsection{Experiments}
+
 
 \begin{figure}[t]
 \begin{center}
@@ -326,6 +357,13 @@ suffer from this issue.
 }
 \label{fig:pgm-doc-sent}
 \end{figure}
+
+
+
+\bibliography{anthology,custom}
+\bibliographystyle{acl_natbib}
+
+\appendix
 
 \section{Experiment 1: Document classification from observed dialogue + action output}
 \subsection{Research question}
@@ -488,14 +526,7 @@ $N$ is the number of labeled examples seen during training.}
 
 \section{Experimental setup}
 
-\section{Results}
-
-\bibliography{anthology,custom}
-\bibliographystyle{acl_natbib}
-
-\appendix
-
-\section{Sasha questions about doc classification (12/27)}
+\section{Results}\section{Sasha questions about doc classification (12/27)}
 \begin{itemize}
 \item Isn't your model p(x, z)
     \begin{itemize}
