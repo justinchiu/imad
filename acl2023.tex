@@ -270,7 +270,7 @@ The next step is to model sentence alignments given the oracle document.
 We start with a very simple alignment model, which we call Sent2Dialogue.
 
 We break up the dialogue into turns $x = (x_1,\ldots,x_T)$.
-For every turn, we first choose a sentence uniformly $p(z_t|d)$,
+For every turn, we first choose a sentence $z_t$ from a uniform $p(z_t|d)$,
 then generate the utterance for that turn $p(x_t|x_{<t}, z_t)$ with BART
 (the encoder input tokens are given by $z_t$ and decoder input tokens by $x_{<t}$).
 The graphical model is given in figure \ref{fig:pgm-sent1}.
