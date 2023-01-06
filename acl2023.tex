@@ -201,7 +201,8 @@ and the sleep phase finds
 \end{equation}
 which is equivalent to finding the $q$ that minimizes the forward KL divergence
 between the model distribution $p$ and $q$.
-In contrast, we optimize a unified objective for both $p$ and $q$,
+In contrast, we optimize a unified objective for both $p$ and $q$ that uses
+the forward KL,
 and do not require samples from the generative model.
 
 \subsection{Parameterization}
