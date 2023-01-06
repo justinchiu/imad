@@ -167,16 +167,15 @@ allowing the $q(d|x)$ to prefer an incorrect document
 even if $p(d|x)$ prefers the correct one.
 
 We make approximations to equation \ref{eqn:fkl} for computational efficiency.
-Rather than relying on importance sampling, we rely on a top-$k$ approximation,
-and use this top-k approximation for approximating the
-evidence $p(x)$, posterior $p(z|x)$, and $q(z|x)$:
+Rather than relying on importance sampling, we use a top-$k$ approximation
+of the evidence $p(x)$, posterior $p(z|x)$, and $q(z|x)$:
 \begin{align*}
 \log\sum_d p(x,d) &\approx \log\sum_{d\in \tilde{D}} p(x,d)\\
 KL[p(d\mid x) || q(d \mid x)] &\approx KL[\tilde{p}(d\mid x) || \tilde{q}(d \mid x)]\\
 \tilde{p}(d\mid x) &= \frac{p(x,d)}{\sum_{d \in \tilde{D}} p(x,d)}\\
 \tilde{q}(d\mid x) &= \frac{q(d\mid x)}{\sum_{d \in \tilde{D}} q(d\mid x)},
 \end{align*}
-so that the partition functions fo $\tilde{p},\tilde{q}$ are approximated over
+so that the partition functions for $\tilde{p},\tilde{q}$ are approximated over
 $\tilde{D} = \text{argtopk } q(d\mid x)$.
 
 We then optimize this objective with respect to the parameters of $p$ and $q$ 
