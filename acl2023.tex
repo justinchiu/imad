@@ -126,7 +126,7 @@ Our goal is to, given an observed task-oriented and guideline-grounded dialogue 
 between a customer and agent,
 justify the actions of the agent by aligning them to natural language guidelines $d$.
 
-\section{Method}
+\section{Method 1: Dialogue given document}
 We propose a generative model of dialogue that justifies its actions by
 aligning to the guidelines.
 
@@ -165,6 +165,12 @@ We propose the following objective:
 \begin{equation}
 \log\sum_d p(x,d) - KL[p(d\mid x) || q(d \mid x)].
 \end{equation}
+This is motivated by the VAE objective,
+which optimizes $\log p(x) - KL[q(d\mid x) || p(d\mid x)]$,
+a lower bound based on the reverse KL.
+The forward KL has nice properties, and has been found to be useful
+in variational inference \cite{fkl,rws}.
+
 In order to speed up training, we make the following approximations:
 \begin{align*}
 \log\sum_d p(x,d) &\approx \log\sum_{d\in \tilde{D}} p(x,d)\\
@@ -176,6 +182,7 @@ so that $\tilde{p},\tilde{q}$ are only normalized over
 $\tilde{D} = \text{argtopk } q(d\mid x)$.
 Note that this topk operation is not differentiable.
 
+
 \paragraph{Why not VAE training?} We found VAE training with the usual ELBO
 required a baseline and achieved worse accuracy even with a leave-one-out baseline.
 We hypothesize that this is because the wake-sleep objectiven naturally uses a
@@ -185,7 +192,15 @@ Additionally, the VAE objective optimizes reverse KL, which may be worse than
 the forward KL in this case, since we an uncalibrated $q$ may ruin training
 by becoming overconfident about an incorrect $d$.
 
-\paragraph{Relation to wake sleep} Wake-phase updates only.
+\paragraph{Relation to wake sleep} The wake-phase aims to find
+\begin{equation}
+\argmax_p \Es{x\sim D}{\Es{z\sim q(z\mid x)}\log p(x,z)/q(z\mid x)},
+\end{equation}
+and the sleep phase finds
+\begin{equation}
+\argmin_q \Es{x,z\sim p(x,z)}{\log \frac{p(x\mid z)}{q(z\mid x)}},
+\end{equation}
+the forward KL divergence between 
 
 \section{Parameterization}
 We parameterize $p(x|d)$ with a sequence to sequence model such as BART.

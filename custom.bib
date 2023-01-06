@@ -101,3 +101,39 @@
   biburl    = {https://dblp.org/rec/journals/corr/abs-2104-00783.bib},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
+
+
+@InProceedings{fkl,
+  title = 	 {Variational refinement for importance sampling using the forward Kullback-Leibler divergence},
+  author =       {Jerfel, Ghassen and Wang, Serena and Wong-Fannjiang, Clara and Heller, Katherine A. and Ma, Yian and Jordan, Michael I.},
+  booktitle = 	 {Proceedings of the Thirty-Seventh Conference on Uncertainty in Artificial Intelligence},
+  pages = 	 {1819--1829},
+  year = 	 {2021},
+  editor = 	 {de Campos, Cassio and Maathuis, Marloes H.},
+  volume = 	 {161},
+  series = 	 {Proceedings of Machine Learning Research},
+  month = 	 {27--30 Jul},
+  publisher =    {PMLR},
+  pdf = 	 {https://proceedings.mlr.press/v161/jerfel21a/jerfel21a.pdf},
+  url = 	 {https://proceedings.mlr.press/v161/jerfel21a.html},
+  abstract = 	 {Variational Inference (VI) is a popular alternative to asymptotically exact sampling in Bayesian inference. Its main workhorse is optimization over a reverse Kullback-Leibler divergence (RKL), which typically underestimates the tail of the posterior leading to miscalibration and potential degeneracy. Importance sampling (IS), on the other hand, is often used to fine-tune and de-bias the estimates of approximate Bayesian inference procedures. The quality of IS crucially depends on the choice of the proposal distribution. Ideally, the proposal distribution has heavier tails than the target, which is rarely achievable by minimizing the RKL. We thus propose a novel combination of optimization and sampling techniques for approximate Bayesian inference by constructing an IS proposal distribution through the minimization of a forward KL (FKL) divergence. This approach guarantees asymptotic consistency and a fast convergence towards both the optimal IS estimator and the optimal variational approximation. We empirically demonstrate on real data that our method is competitive with variational boosting and MCMC.}
+}
+
+@misc{rws,
+  doi = {10.48550/ARXIV.1406.2751},
+  
+  url = {https://arxiv.org/abs/1406.2751},
+  
+  author = {Bornschein, Jörg and Bengio, Yoshua},
+  
+  keywords = {Machine Learning (cs.LG), FOS: Computer and information sciences, FOS: Computer and information sciences},
+  
+  title = {Reweighted Wake-Sleep},
+  
+  publisher = {arXiv},
+  
+  year = {2014},
+  
+  copyright = {arXiv.org perpetual, non-exclusive license}
+}
+
