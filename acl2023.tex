@@ -207,8 +207,7 @@ and do not require samples from the generative model.
 We parameterize $p(x|d)$ with a sequence to sequence model such as BART.
 The prior $p(d)$ is a uniform distribution.
 The inference network $q(d|x) \propto \langle\text{enc}(x),\text{enc}(d)\rangle$
-encodes $x,d$ with a transformer such as RoBERTa.
-
+encodes $x,d$ with the pooler output of RoBERTa.
 
 \subsection{Experiments}
 We present an experiment on
@@ -284,8 +283,8 @@ We directly optimize the marginal likelihood
 &= \log \prod_t \sum_{z_t} p(x_t \mid x_{<t}, z_t) p(z_t\mid d).
 \end{aligned}
 \end{equation}
-\footnote{A natural extension of this model is to instead model $p(z_t|x_{<t},d)$,
-we can approximate the marginal likelihood by taking the top-k elements of this
+\footnote{A natural extension of this model is to instead model $p(z_t|x_{<t},d)$.
+We can approximate the marginal likelihood by taking the top-k elements of this
 more informative prior.}
 
 For each turn, we perform inference via Bayes' rule
