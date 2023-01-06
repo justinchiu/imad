@@ -260,12 +260,15 @@ suffer from this issue.
 Additionally, the unsupervised model has issues distinguishing between similar
 documents, such as changing the name of an account versus changing the address.
 
-Doc2Dialogue with full marginalization has a worse document accuracy than approximate inference
-because of model selection.
+We hypothesize that Doc2Dialogue with full marginalization has a slightly worse document accuracy
+than approximate inference because of model selection.
 We report accuracy after 10 epochs of training, since we do not assume access to
 examples with labeled document alignments.
-Full marginalization reaches a similar document accuracy in the middle of training,
-but the accuracy subsequently drops as training continues.
+Full marginalization does reach a higher document accuracy in the middle of training,
+but the accuracy slightly drops as training continues.
+We also use the same hyperparameters throughout.
+With further tuning full, marginalization should reach the same performance as
+approximate inference.
 
 \section{Method 2: Sent2Dialogue}
 The next step is to model sentence alignments given the oracle document.
