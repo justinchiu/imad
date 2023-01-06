@@ -193,7 +193,7 @@ been shown to work worse than the forward KL \cite{fkl}.
 
 \paragraph{Relation to wake sleep} The wake-phase aims to find
 \begin{equation}
-\argmax_p \Es{x\sim D}{\Es{z\sim q(z\mid x)}{\frac{\log p(x,z)}{q(z\mid x)}}},
+\argmax_p \Es{x\sim \text{data}}{\Es{z\sim q(z\mid x)}{\frac{\log p(x,z)}{q(z\mid x)}}},
 \end{equation}
 and the sleep phase finds
 \begin{equation}
