@@ -245,7 +245,10 @@ Doc2Dialogue                      & $\log \sum_{d\in\tilde{D}} p(x,d) - KL[\tild
 Results for document classification with a generative model at the first
 agent action in a conversation. Documents and dialogues are truncated to the first 256
 tokens.
-The number of labeled training examples is $N$.}
+The number of labeled training examples is $N$.
+The set $\tilde{D}=\text{argtop16}q(d|x)$ is used to approximate the
+partition function for $\tilde{p}(d|x)$ and $\tilde{q}(d|x)$.
+}
 \end{table*}
 
 In table \ref{tbl:unsup-doc}, we see that both full marginalization and approximate inference
