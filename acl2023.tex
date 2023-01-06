@@ -85,9 +85,6 @@ through one after the other \cite{abcd}.
 
 All agents, whether human or robot, should follow safety guidelines.
 As a result, safety guidelines are often written in natural language.
-Natural language guidelines also allow for zero-shot generalization to scenarios
-that may be new to an agent, but described similarly in the guidelines to
-familiar scenarios.
 
 Our goal is to train dialogue agents that not only follow a set of guidelines,
 but justify their actions by pointing to the guidelines.
@@ -124,11 +121,11 @@ Reading manuals for generalization (RTFM, Kartik's work).
 \section{Problem setup}
 Our goal is to, given an observed task-oriented and guideline-grounded dialogue $x$
 between a customer and agent,
-justify the actions of the agent by aligning them to natural language guidelines $d$.
+align each turn in $x$ to a sentence $z$ in natural language guidelines $d$.
 
 \section{Method 1: Dialogue given document}
 We propose a generative model of dialogue that justifies its actions by
-aligning to the guidelines.
+aligning to the guidelines as a whole, without sentence alignments.
 
 The model first UNIFORMLY chooses a document in the guideline $d \sim p(d)$,
 then generates the dialogue $x \sim p(x \mid d)$.
@@ -144,9 +141,9 @@ We perform inference online via Bayes' rule:
 \argmax_d p(d\mid x) = \argmax_d p(x\mid d)p(d).
 \end{equation}
 
-\textbf{Why not break down alignments at the turn-level?}
+\textbf{Why not choose document alignments iid at every agent turn?}
 We found that using a document to generate only the next agent turn resulted in poor
-unsupervised accuracy (degeneration to a uniform distribution).
+unsupervised accuracy, in particular the document choice model degenerated to a uniform distribution.
 Additionally, we found that many single turns were well-explained by a large number of different
 documents.
 It is these two points that led us to consider generating full dialogues given a single document,
@@ -159,19 +156,26 @@ Note that this is only for documents. We will perform lower-level alignments at
 the turn-level, while keeping document selection at the full dialogue level.
 
 \subsection{Approximate inference in training}
-We perform additional experiments with an inference network $q(d|x)$ to speed up training
-over full marginalization.
-We propose the following objective:
+We perform additional experiments with an inference network $q(d|x)$ to speed up training.
+We target the following objective:
 \begin{equation}
+\label{eqn:fkl}
 \log\sum_d p(x,d) - KL[p(d\mid x) || q(d \mid x)].
 \end{equation}
-This is motivated by the VAE objective,
-which optimizes $\log p(x) - KL[q(d\mid x) || p(d\mid x)]$,
-a lower bound based on the reverse KL.
-The forward KL has nice properties, and has been found to be useful
-in variational inference \cite{fkl,rws}.
+This differs from the VAE objective,
+$\log p(x) - KL[q(d\mid x) || p(d\mid x)]$,
+in that we use the forward KL.
+The forward KL is known to control the error of importance sampling \cite{chatterjee},
+and has been found to be useful in variational inference \cite{fkl,rws}.
+In particular, the reverse KL is mode-seeking, meaning $q(d|x)$ may have smaller
+tails than $p(d|x)$.
+These smaller tails potentially lead to increased bias in gradient estimation.
 
-In order to speed up training, we make the following approximations:
+We make two approximations to equation \ref{eqn:fkl} for computational efficiency.
+Rather than relying on importance sampling, we rely on a top-$k$ approximation,
+and use this top-k approximation for both
+approximating the evidence $p(x)$ and a self-normalized
+approximation of the posterior $p(z|x)$ and $q(z|x)$:
 \begin{align*}
 \log\sum_d p(x,d) &\approx \log\sum_{d\in \tilde{D}} p(x,d)\\
 KL[p(d\mid x) || q(d \mid x)] &\approx KL[\tilde{p}(d\mid x) || \tilde{q}(d \mid x)]\\
@@ -180,17 +184,19 @@ KL[p(d\mid x) || q(d \mid x)] &\approx KL[\tilde{p}(d\mid x) || \tilde{q}(d \mid
 \end{align*}
 so that $\tilde{p},\tilde{q}$ are only normalized over
 $\tilde{D} = \text{argtopk } q(d\mid x)$.
-Note that this topk operation is not differentiable.
+The topk operation is not differentiable.
 
+We then optimize this objective with respect to the parameters of $p$ and $q$ 
+via gradient descent.
 
 \paragraph{Why not VAE training?} We found VAE training with the usual ELBO
-required a baseline and achieved worse accuracy even with a leave-one-out baseline.
-We hypothesize that this is because the wake-sleep objectiven naturally uses a
+required a baseline and achieved worse accuracy with a leave-one-out baseline.
+There are two differences:
+First, our objective naturally uses a
 \href{https://github.com/justinchiu/elbos-baselines}{regret baseline},
 while the VAE baseline can be interpreted as the advantage.
-Additionally, the VAE objective optimizes reverse KL, which may be worse than
-the forward KL in this case, since we an uncalibrated $q$ may ruin training
-by becoming overconfident about an incorrect $d$.
+Second, the VAE objective optimizes reverse KL, which has shown to have
+pathologies not present in the reverse KL \cite{fkl}.
 
 \paragraph{Relation to wake sleep} The wake-phase aims to find
 \begin{equation}
@@ -200,7 +206,13 @@ and the sleep phase finds
 \begin{equation}
 \argmin_q \Es{x,z\sim p(x,z)}{\log \frac{p(x\mid z)}{q(z\mid x)}},
 \end{equation}
-the forward KL divergence between 
+the forward KL divergence between the model distribution $p$ and $q$.
+In contrast, we optimize a unified objective for both $p$ and $q$,
+and do not require samples from the generative model.\footnote{
+    We could also potentialy optimize the evidence minus the symmetrized KL,
+    leading to 
+}
+
 
 \section{Parameterization}
 We parameterize $p(x|d)$ with a sequence to sequence model such as BART.
@@ -208,7 +220,7 @@ The prior $p(d)$ is a uniform distribution.
 The inference network $q(d|x) \propto \langle\text{enc}(x),\text{enc}(d)\rangle$
 encodes $x,d$ with a transformer such as RoBERTa.
 
-\section{Span alignments}
+\section{Method 2: Sentence alignments}
 Assert no multi-hop.
 
 \begin{figure}[t]
