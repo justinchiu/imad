@@ -186,11 +186,13 @@ is not differentiable.
 \paragraph{Why not VAE training?} We found VAE training with the usual ELBO
 required a baseline and achieved worse accuracy with a leave-one-out baseline.
 There are two differences:
-First, the gradient of our objective naturally has an
+First, the VAE objective optimizes reverse KL, which has
+been shown to work worse than the forward KL \cite{fkl}.
+Second, the gradient of our objective naturally has an
 \href{https://github.com/justinchiu/elbos-baselines}{exponentiated regret interpretation},
 while the VAE gradient with a leave-one-out baseline can be interpreted as the advantage.
-Second, the VAE objective optimizes reverse KL, which has
-been shown to work worse than the forward KL \cite{fkl}.
+Our objective does not require the manual construction of a baseline,
+and instead achieves a similar effect through automatic differentiation alone.
 
 \paragraph{Relation to wake sleep} The wake-phase aims to find
 \begin{equation}
