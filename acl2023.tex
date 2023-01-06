@@ -156,7 +156,7 @@ We approximate the following objective:
 \log\sum_d p(x,d) - KL[p(d\mid x) || q(d \mid x)].
 \end{equation}
 This differs from the VAE objective,
-$\log p(x) - KL[q(d\mid x) || p(d\mid x)]$,
+$\log p(x) - KL[q(d|x) || p(d|x)]$,
 as we use the forward KL.
 The forward KL is known to control the error of importance sampling \cite{chatterjee},
 and has been found to be useful in variational inference \cite{fkl,rws}.
@@ -174,25 +174,25 @@ KL[p(d\mid x) || q(d \mid x)] &\approx KL[\tilde{p}(d\mid x) || \tilde{q}(d \mid
 \tilde{p}(d\mid x) &= \frac{p(x,d)}{\sum_{d \in \tilde{D}} p(x,d)}\\
 \tilde{q}(d\mid x) &= \frac{q(d\mid x)}{\sum_{d \in \tilde{D}} q(d\mid x)},
 \end{align*}
-so that $\tilde{p},\tilde{q}$ are only normalized over
+so that the partition functions fo $\tilde{p},\tilde{q}$ are approximated over
 $\tilde{D} = \text{argtopk } q(d\mid x)$.
-The topk operation is not differentiable.
 
 We then optimize this objective with respect to the parameters of $p$ and $q$ 
-via gradient descent.
+via gradient descent, treating $\tilde{D}$ as a constant because the topk operation
+is not differentiable.
 
 \paragraph{Why not VAE training?} We found VAE training with the usual ELBO
 required a baseline and achieved worse accuracy with a leave-one-out baseline.
 There are two differences:
 First, our objective naturally uses a
 \href{https://github.com/justinchiu/elbos-baselines}{regret baseline},
-while the VAE baseline can be interpreted as the advantage.
+while the leave-one-out baseline can be interpreted as the advantage.
 Second, the VAE objective optimizes reverse KL, which has
 been shown to work worse than the forward KL \cite{fkl}.
 
 \paragraph{Relation to wake sleep} The wake-phase aims to find
 \begin{equation}
-\argmax_p \Es{x\sim D}{\Es{z\sim q(z\mid x)}\log p(x,z)/q(z\mid x)},
+\argmax_p \Es{x\sim D}{\Es{z\sim q(z\mid x)}{\frac{\log p(x,z)}{q(z\mid x)}}},
 \end{equation}
 and the sleep phase finds
 \begin{equation}
@@ -208,8 +208,88 @@ The prior $p(d)$ is a uniform distribution.
 The inference network $q(d|x) \propto \langle\text{enc}(x),\text{enc}(d)\rangle$
 encodes $x,d$ with a transformer such as RoBERTa.
 
-\section{Method 2: Sentence alignments}
-Assert no multi-hop.
+
+\subsection{Experiments}
+We present an experiment on
+unsupervised document classification with a generative model of dialogue given document.
+We evaluate the document accuracy $d|x$ right before first agent action.
+An example of the first agent action is pulling up the customer's account,
+at which point the agent should be following a specific document in the guidelines.
+The agent should know what the correct document is before taking an action.
+
+We truncate documents and dialogues to 256 tokens.
+If the first agent action does not happen in the first 256 tokens of the dialogue,
+we evaluate the document prediction at the 256th token.
+
+We provide a fully supervised skyline as reference, which directly models
+$p_s(d|x) \propto \langle \text{emb}(d), \text{RoBERTa}(x)\rangle$,
+where we use a label embedding of the document $d$ that does not see
+the document's text (a RoBERTa encoding of the document performed similarly).
+As a baseline, we use BM25 which is based on lexical similarity.
+
+\begin{table*}
+\centering
+\begin{tabular}{llrrr}
+\toprule
+model                             & Training objective     & $N$   & doc acc & training time\\
+\midrule
+Skyline supervised                & $\log p_s(d|x)$        & 8,034 &    90.7 & -\\
+Baseline lexical                  & -                      & 0     &    34.1 & -\\
+Doc2Dialogue                      & $\log p(x)$            & 0     &    71.8 & 20h\\
+Doc2Dialogue                      & $\log p(x) - KL[p||q]$ & 0     &    75.8 & 14h\\
+\bottomrule
+\end{tabular}
+\caption{
+\label{tbl:unsup-doc}
+Results for document classification with a generative model at the first
+agent action in a conversation. Documents and dialogues are truncated to the first 256
+tokens.
+The number of labeled training examples is $N$.}
+\end{table*}
+
+In table \ref{tbl:unsup-doc}, we see that both full marginalization and approximate inference
+outperform the lexical baseline, but do not reach the supervised skyline.
+One caveat is that a portion of the documents in the guidelines are lexically identical to one
+another, resulting in a performance drop for the unsupervised models.
+The supervised skyline does not use the documents themselves and therefore does not
+suffer from this issue.
+
+\section{Method 2: Dialogue, sentence given document}
+\begin{figure}[t]
+\begin{center}
+\scalebox{.85}{
+\begin{tikzpicture}
+
+\node[obs] (d) {$d$};
+\node[latent, below=of d] (z1) {$z_1$};
+\node[latent, right=of z1] (z2) {$z_2$};
+\node[latent, right=of z2] (z3) {$z_3$};
+\node[obs, below=of z1] (x1) {$x_1$};
+\node[obs, below=of z2] (x2) {$x_2$};
+\node[obs, below=of z3] (x3) {$x_3$};
+
+\edge[->] {d} {z1};
+\edge[->] {d} {z2};
+\edge[->] {d} {z3};
+
+%\edge[->] {z1} {z2};
+%\edge[->] {z2} {z3};
+
+\edge[->] {z1} {x1};
+\edge[->] {z2} {x2};
+\edge[->] {z3} {x3};
+
+\edge[->] {x1} {x2};
+\draw[->] (x1) to[bend right=30] (x3);
+\edge[->] {x2} {x3};
+
+\end{tikzpicture}
+}
+\end{center}
+\caption{Graphical model for the first approach to sentence alignment.
+}
+\label{fig:pgm-sent}
+\end{figure}
 
 \begin{figure}[t]
 \begin{center}
@@ -217,23 +297,23 @@ Assert no multi-hop.
 \begin{tikzpicture}
 
 \node[latent] (d) {$d$};
-\node[latent, below=of d] (a1) {$a_1$};
-\node[latent, right=of a1] (a2) {$a_2$};
-\node[latent, right=of a2] (a3) {$a_3$};
-\node[obs, below=of a1] (x1) {$x_1$};
-\node[obs, below=of a2] (x2) {$x_2$};
-\node[obs, below=of a3] (x3) {$x_3$};
+\node[latent, below=of d] (z1) {$z_1$};
+\node[latent, right=of z1] (z2) {$z_2$};
+\node[latent, right=of z2] (z3) {$z_3$};
+\node[obs, below=of z1] (x1) {$x_1$};
+\node[obs, below=of z2] (x2) {$x_2$};
+\node[obs, below=of z3] (x3) {$x_3$};
 
-\edge[->] {d} {a1};
-\edge[->] {d} {a2};
-\edge[->] {d} {a3};
+\edge[->] {d} {z1};
+\edge[->] {d} {z2};
+\edge[->] {d} {z3};
 
-\edge[->] {a1} {a2};
-\edge[->] {a2} {a3};
+\edge[->] {z1} {z2};
+\edge[->] {z2} {z3};
 
-\edge[->] {a1} {x1};
-\edge[->] {a2} {x2};
-\edge[->] {a3} {x3};
+\edge[->] {z1} {x1};
+\edge[->] {z2} {x2};
+\edge[->] {z3} {x3};
 
 \edge[->] {x1} {x2};
 \draw[->] (x1) to[bend right=30] (x3);
@@ -244,7 +324,7 @@ Assert no multi-hop.
 \end{center}
 \caption{Graphical model for full document and span alignments.
 }
-\label{fig:pgm-sent}
+\label{fig:pgm-doc-sent}
 \end{figure}
 
 \section{Experiment 1: Document classification from observed dialogue + action output}
