@@ -121,9 +121,10 @@ between a customer and agent,
 align each turn in $x$ to a sentence $z$ from document $d$ from guidelines $D$.
 
 
-\section{Method 1: Dialogue given document}
+\section{Method 1: Doc2Dialogue}
 We start with a generative model of dialogue that justifies its actions by
 aligning to the guidelines as a whole, without sentence alignments.
+We call this model Doc2Dialogue.
 
 The model first UNIFORMLY chooses a document in the guideline $d \sim p(d)$,
 then generates the dialogue $x \sim p(x \mid d)$.
@@ -257,12 +258,20 @@ suffer from this issue.
 Additionally, the unsupervised model has issues distinguishing between similar
 documents, such as changing the name of an account versus changing the address.
 
-\section{Method 2: Dialogue, sentence given document}
+Doc2Dialogue with full marginalization has a worse document accuracy than approximate inference
+because of model selection.
+We report accuracy after 10 epochs of training, since we do not assume access to
+examples with labeled document alignments.
+Full marginalization reaches a similar document accuracy in the middle of training,
+but the accuracy subsequently drops as training continues.
+
+\section{Method 2: Sent2Dialogue}
 The next step is to model sentence alignments given the oracle document.
-We start with a very simple alignment model,
-which breaks up the dialogue into turns $x = (x_1,\ldots,x_T)$.
-For every turn, we first choose an alignment uniformly $p(z_t|d)$,
-then generates the utterance for that turn $p(x_t|x_{<t}, z_t)$ using BART
+We start with a very simple alignment model, which we call Sent2Dialogue.
+
+We break up the dialogue into turns $x = (x_1,\ldots,x_T)$.
+For every turn, we first choose a sentence uniformly $p(z_t|d)$,
+then generate the utterance for that turn $p(x_t|x_{<t}, z_t)$ with BART
 (the encoder input tokens are given by $z_t$ and decoder input tokens by $x_{<t}$).
 The graphical model is given in figure \ref{fig:pgm-sent1}.
 
@@ -279,7 +288,10 @@ more informative prior.}
 
 For each turn, we perform inference via Bayes' rule
 \begin{equation}
-\argmax_{z_t} p(z_t \mid x, d) = \argmax_{z_t} p(x_t \mid x_{<t}, z_t)p(z_t\mid d),
+\begin{aligned}
+&\argmax_{z_t} p(z_t \mid x, d)\\
+&= \argmax_{z_t} p(x_t \mid x_{<t}, z_t)p(z_t\mid d),
+\end{aligned}
 \end{equation}
 where $p(z_t|d)$ is uniform and can be dropped.
 
@@ -320,7 +332,34 @@ where $p(z_t|d)$ is uniform and can be dropped.
 \end{figure}
 
 \subsection{Experiments}
+We evaluate unsupervised sentence alignment models,
+and report the average validation sentence accuracy across all turns.
+We annotate the validation sentence alignments ourselves.
 
+We do not truncate documents or dialogues in this experiment.
+
+We do not have access to training labels, and therefore do not have a supervised skyline.
+We use as a baseline BM25, which measures lexical similarity.
+
+We present results in table \ref{tbl:unsup-sent} TBD.
+
+\begin{table*}
+\centering
+\begin{tabular}{llrrr}
+\toprule
+model                             & Training objective     & $N$   & sent acc & training time\\
+\midrule
+Baseline lexical                  & -                      & 0     &    & -\\
+Sent2Turn                         & $\log p(x|d)$          & 0     &    & -\\
+\bottomrule
+\end{tabular}
+\caption{
+\label{tbl:unsup-sent}
+Results for document classification with a generative model at the first
+agent action in a conversation. Documents and dialogues are truncated to the first 256
+tokens.
+The number of labeled training examples is $N$.}
+\end{table*}
 
 \begin{figure}[t]
 \begin{center}
