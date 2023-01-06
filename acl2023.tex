@@ -161,7 +161,7 @@ This differs from the VAE objective,
 $\log p(x) - KL[q(d|x) || p(d|x)]$,
 as we use the forward KL.
 The forward KL is known to control the error of importance sampling \cite{chatterjee},
-and has been found to be useful in variational inference \cite{fkl,rws}.
+and has been found to work better in variational inference \cite{fkl}.
 In particular, the reverse KL is mode-seeking,
 allowing the $q(d|x)$ to prefer an incorrect document
 even if $p(d|x)$ prefers the correct one.
