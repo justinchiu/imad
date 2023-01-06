@@ -179,7 +179,7 @@ so that the partition functions for $\tilde{p},\tilde{q}$ are approximated over
 $\tilde{D} = \text{argtopk } q(d\mid x)$.
 
 We then optimize this objective with respect to the parameters of $p$ and $q$ 
-via gradient descent, treating $\tilde{D}$ as a constant because the topk operation
+via gradient descent. We treat $\tilde{D}$ as a constant because the topk operation
 is not differentiable.
 
 \paragraph{Why not VAE training?} We found VAE training with the usual ELBO
