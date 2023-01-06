@@ -197,9 +197,10 @@ been shown to work worse than the forward KL \cite{fkl}.
 \end{equation}
 and the sleep phase finds
 \begin{equation}
-\argmin_q \Es{x,z\sim p(x,z)}{\log \frac{p(z\mid x)}{q(z\mid x)}},
+\argmax_q \Es{x,z\sim p(x,z)}{\log q(z\mid x)},
 \end{equation}
-the forward KL divergence between the model distribution $p$ and $q$.
+which is equivalent to finding the $q$ that minimizes the forward KL divergence
+between the model distribution $p$ and $q$.
 In contrast, we optimize a unified objective for both $p$ and $q$,
 and do not require samples from the generative model.
 
