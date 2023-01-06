@@ -75,24 +75,21 @@ TBD
 
 \section{Introduction}
 In many customer-facing dialogue applications,
-customer service interactions must follow a set of guidelines for safety,
-which have a natural sequential order.
+customer service interactions must follow safety guidelines.
+These guidelines often have a natural sequential order \cite{abcd}:
 If a customer is locked out of their account and requests a password reset,
 the agent must first verify that the customer is indeed the owner of the account.
-This if-then structure is a defining trait for guidelines,
-as the guidelines specify a set of rules that the agent should proceed
-through one after the other \cite{abcd}.
 
 All agents, whether human or robot, should follow safety guidelines.
 As a result, safety guidelines are often written in natural language.
 
-Our goal is to train dialogue agents that not only follow a set of guidelines,
-but justify their actions by pointing to the guidelines.
+Our goal is to train dialogue agents that not only follow a set of natural language guidelines,
+but explain their actions by pointing to the guidelines.
 This allows others to verify whether the guidelines have been followed.
 
-We propose a generative model of dialogue
-that justifies sequential decisions with guidelines
-and does not require supervision.
+We propose a dialogue model
+that explain sequential decisions with guideline-aligned rationales,
+and does not require rationale labels.
 
 Experiments show that our model is accurate,
 intepretable,
@@ -119,12 +116,13 @@ Rule following (SHARC, doc2dial)
 Reading manuals for generalization (RTFM, Kartik's work).
 
 \section{Problem setup}
-Our goal is to, given an observed task-oriented and guideline-grounded dialogue $x$
+Our goal is to, given a guideline-grounded dialogue $x$
 between a customer and agent,
-align each turn in $x$ to a sentence $z$ in natural language guidelines $d$.
+align each turn in $x$ to a sentence $z$ from document $d$ from guidelines $D$.
+
 
 \section{Method 1: Dialogue given document}
-We propose a generative model of dialogue that justifies its actions by
+We start with a generative model of dialogue that justifies its actions by
 aligning to the guidelines as a whole, without sentence alignments.
 
 The model first UNIFORMLY chooses a document in the guideline $d \sim p(d)$,
@@ -143,33 +141,28 @@ We perform inference online via Bayes' rule:
 
 \textbf{Why not choose document alignments iid at every agent turn?}
 We found that using a document to generate only the next agent turn resulted in poor
-unsupervised accuracy, in particular the document choice model degenerated to a uniform distribution.
+unsupervised accuracy.
+In particular, the document choice model would converge to a uniform distribution.
 Additionally, we found that many single turns were well-explained by a large number of different
 documents.
-It is these two points that led us to consider generating full dialogues given a single document,
-so that document must explain multiple turns at once.
-This is because documents in guidelines share many common actions,
-and it is the sequencing of these actions that distinguishes them.
-Therefore modeling the whole dialogue allows the model to take into account full
-sequences of actions.
-Note that this is only for documents. We will perform lower-level alignments at
-the turn-level, while keeping document selection at the full dialogue level.
+The document should instead explain the dialogue as a whole, rather than an individual turn.
+It is these two points that led us to consider generating full dialogues given a single document.
 
 \subsection{Approximate inference in training}
 We perform additional experiments with an inference network $q(d|x)$ to speed up training.
-We target the following objective:
+We approximate the following objective:
 \begin{equation}
 \label{eqn:fkl}
 \log\sum_d p(x,d) - KL[p(d\mid x) || q(d \mid x)].
 \end{equation}
 This differs from the VAE objective,
 $\log p(x) - KL[q(d\mid x) || p(d\mid x)]$,
-in that we use the forward KL.
+as we use the forward KL.
 The forward KL is known to control the error of importance sampling \cite{chatterjee},
 and has been found to be useful in variational inference \cite{fkl,rws}.
-In particular, the reverse KL is mode-seeking, meaning $q(d|x)$ may have smaller
-tails than $p(d|x)$.
-These smaller tails potentially lead to increased bias in gradient estimation.
+In particular, the reverse KL is mode-seeking,
+allowing the $q(d|x)$ to prefer an incorrect document
+even if $p(d|x)$ prefers the correct one.
 
 We make approximations to equation \ref{eqn:fkl} for computational efficiency.
 Rather than relying on importance sampling, we rely on a top-$k$ approximation,
@@ -194,8 +187,8 @@ There are two differences:
 First, our objective naturally uses a
 \href{https://github.com/justinchiu/elbos-baselines}{regret baseline},
 while the VAE baseline can be interpreted as the advantage.
-Second, the VAE objective optimizes reverse KL, which has shown to have
-pathologies not present in the reverse KL \cite{fkl}.
+Second, the VAE objective optimizes reverse KL, which has
+been shown to work worse than the forward KL \cite{fkl}.
 
 \paragraph{Relation to wake sleep} The wake-phase aims to find
 \begin{equation}
