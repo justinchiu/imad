@@ -194,7 +194,7 @@ while the VAE gradient with a leave-one-out baseline can be interpreted as the a
 Our objective does not require the manual construction of a baseline,
 and instead achieves a similar effect through automatic differentiation alone.
 
-\paragraph{Relation to wake sleep} The wake-phase aims to find
+\paragraph{Relation to wake sleep} The wake-phase of wake sleep aims to find
 \begin{equation}
 \argmax_p \Es{x\sim \text{data}}{\Es{z\sim q(z\mid x)}{\frac{\log p(x,z)}{q(z\mid x)}}},
 \end{equation}
