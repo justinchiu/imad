@@ -144,28 +144,28 @@ which allows us to make predictions for any prefix of $x$.
 \textbf{Why not choose document alignments iid at every agent turn?}
 We found that using a document to generate only the next agent turn resulted in poor
 unsupervised accuracy.
-In particular, the document choice model would converge to a uniform distribution.
-Additionally, we found that many single turns were well-explained by a large number of different
-documents.
-The document should instead explain the dialogue as a whole, rather than an individual turn.
-It is these two points that led us to consider generating full dialogues given a single document.
+Many single turns are well-explained by a large number of different documents,
+since many documents share steps.
+The document should instead explain the dialogue as a whole, rather than each individual turn.
 
 \subsection{Approximate inference in training}
 We perform additional experiments with an inference network $q(d|x)$ to speed up training.
 We approximate the following objective:
 \begin{equation}
 \label{eqn:fkl}
-\log\sum_d p(x,d) - KL[p(d\mid x) || q(d \mid x)].
+\log\sum_d p(x,d) - KL[p(d\mid x) || q(d \mid x)],
 \end{equation}
+which aims to train the inference network by optimizing the forward KL.
 This differs from the VAE objective,
 $\log p(x) - KL[q(d|x) || p(d|x)]$,
-as we use the forward KL.
+which uses the reverse KL.
 The forward KL controls the error of importance sampling \cite{chatterjee},
-and has been found to work better in variational inference \cite{fkl}
-(also cite chi-square, f-divergence VI papers).
-In particular, the reverse KL is mode-seeking,
+and has been found to work better than the reverse KL in variational inference \cite{fkl}
+(also cite chi-square, f-divergence VI papers).\footnote{
+The reverse KL is mode-seeking,
 allowing the $q(d|x)$ to prefer an incorrect document
 even if $p(d|x)$ prefers the correct one.
+}
 
 We make approximations to equation \ref{eqn:fkl} for computational efficiency.
 Rather than relying on importance sampling, we use a top-$k$ approximation
@@ -184,7 +184,7 @@ via gradient descent. We treat $\tilde{D}$ as a constant because the topk operat
 is not differentiable.
 
 \paragraph{Why not VAE training?} We found VAE training with the usual ELBO
-required a baseline and achieved worse accuracy with a leave-one-out baseline.
+required a baseline and still achieved worse accuracy than our objective.
 There are two differences:
 First, the VAE objective optimizes reverse KL, which has
 been shown to work worse than the forward KL \cite{fkl}.
