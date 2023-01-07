@@ -158,7 +158,7 @@ We approximate the following objective:
 which aims to train the inference network by optimizing the forward KL.
 This differs from the VAE objective,
 $\log p(x) - KL[q(d|x) || p(d|x)]$,
-which uses the reverse KL.
+which uses the reverse KL \cite{blei} (equation 14).
 The forward KL controls the error of importance sampling \cite{chatterjee},
 and has been found to work better than the reverse KL in variational inference \cite{fkl}
 (also cite chi-square, f-divergence VI papers).\footnote{
