@@ -291,12 +291,19 @@ We directly optimize the marginal likelihood
 \begin{equation}
 \begin{aligned}
 &\log p(x_{1:T}\mid d)\\
-&= \log \prod_t \sum_{z_t} p(x_t \mid x_{<t}, z_t) p(z_t\mid d).
+&= \sum_t \log \sum_{z_t} p(x_t \mid x_{<t}, z_t) p(z_t\mid d).
 \end{aligned}
 \end{equation}
 \footnote{A natural extension of this model is to instead model $p(z_t|x_{<t},d)$.
 We can approximate the marginal likelihood by taking the top-k elements of this
 more informative prior.}
+\footnote{
+The independence assumption $x_t || z_{t-1} | x_{<t}$ allows us to efficiently
+compute the marginal likelihood.
+For each sentence $z \in D$,
+we batch the computation of $p(x_t|x_{<t},z)$ for the whole conversation $x$.
+Then for each turn $x_t$ we use indexing to marginalize over $z$.
+}
 
 For each turn, we perform inference via Bayes' rule
 \begin{equation}
