@@ -277,9 +277,9 @@ We also use the same hyperparameters throughout.
 With further tuning full, marginalization should reach the same performance as
 approximate inference.
 
-\section{Method 2: Sent2Dialogue}
+\section{Method 2: Sent2Turn}
 The next step is to model sentence alignments given the oracle document.
-We start with a very simple alignment model, which we call Sent2Dialogue.
+We start with a very simple alignment model, which we call Sent2Turn.
 
 We break up the dialogue into turns $x = (x_1,\ldots,x_T)$.
 For every turn, we first choose a sentence $z_t$ from a uniform distribution over
@@ -303,7 +303,7 @@ The independence assumption $x_t || z_{t-1} | x_{<t}$ allows us to efficiently
 compute the marginal likelihood.
 For each sentence $z \in D$,
 we batch the computation of $p(x_t|x_{<t},z)$ for the whole conversation $x$.
-Then for each turn $x_t$ we use indexing to marginalize over $z$.
+Then for each turn $x_t$ we use scatter add to marginalize over $z$.
 }
 
 For each turn, we perform inference via Bayes' rule
@@ -351,36 +351,15 @@ where $p(z_t|d)$ is uniform and can be dropped.
 \label{fig:pgm-sent1}
 \end{figure}
 
-\subsection{Experiments}
-We evaluate unsupervised sentence alignment models,
-and report the average validation sentence accuracy across all turns.
-We annotate the validation sentence alignments ourselves.
+The independence assumptions are too limiting in the above model.
+We propose a more expressive model, which allows conditioning on the previous step
+and previous utterances during step prediction.
+Conditioning on these two events helps because 1) guidelines have a mostly monotonic structure,
+so the model should know what the previous step is,
+and 2) steps may take a variable number of turns, so the model must determine
+when to move on to the next step based on what has been said.
 
-We do not truncate documents or dialogues in this experiment.
-
-We do not have access to training labels, and therefore do not have a supervised skyline.
-We use as a baseline BM25, which measures lexical similarity.
-
-We present results in table \ref{tbl:unsup-sent} TBD.
-
-\begin{table*}
-\centering
-\begin{tabular}{llrrr}
-\toprule
-model                             & Training objective     & $N$   & sent acc & training time\\
-\midrule
-Baseline random                   & -                      & 0     &       19 & -\\
-Baseline lexical                  & -                      & 0     &       28 & -\\
-Sent2Turn (uniform)               & $\log p(x|d)$          & 0     &       28 & 9h\\
-\bottomrule
-\end{tabular}
-\caption{
-\label{tbl:unsup-sent}
-Results for document classification with a generative model at the first
-agent action in a conversation. Documents and dialogues are truncated to the first 256
-tokens.
-The number of labeled training examples is $N$.}
-\end{table*}
+We give the graphical model in figure \ref{fig:pgm-doc-sent}.
 
 \begin{figure}[t]
 \begin{center}
@@ -421,6 +400,38 @@ The number of labeled training examples is $N$.}
 }
 \label{fig:pgm-doc-sent}
 \end{figure}
+
+\subsection{Experiments}
+We evaluate unsupervised sentence alignment models,
+and report the average validation sentence accuracy across all turns.
+We annotate the validation sentence alignments ourselves.
+
+We do not truncate documents or dialogues in this experiment.
+
+We do not have access to training labels, and therefore do not have a supervised skyline.
+We use as a baseline BM25, which measures lexical similarity.
+
+We present results in table \ref{tbl:unsup-sent} TBD.
+
+\begin{table*}
+\centering
+\begin{tabular}{llrrr}
+\toprule
+model                             & Training objective     & $N$   & sent acc & training time\\
+\midrule
+Baseline random                   & -                      & 0     &       19 & -\\
+Baseline lexical                  & -                      & 0     &       28 & -\\
+Sent2Turn (uniform)               & $\log p(x|d)$          & 0     &       28 & 9h\\
+\bottomrule
+\end{tabular}
+\caption{
+\label{tbl:unsup-sent}
+Results for document classification with a generative model at the first
+agent action in a conversation. Documents and dialogues are truncated to the first 256
+tokens.
+The number of labeled training examples is $N$.}
+\end{table*}
+
 
 
 
