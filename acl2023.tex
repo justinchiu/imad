@@ -168,7 +168,8 @@ even if $p(d|x)$ prefers the correct one.
 }
 
 We make approximations to equation \ref{eqn:fkl} for computational efficiency.
-Rather than relying on importance sampling, we use a top-$k$ approximation
+Rather than relying on importance sampling or boosting, as done in \citet{fkl},
+we use a biased top-$k$ approximation
 of the evidence $p(x)$, posterior $p(z|x)$, and $q(z|x)$:
 \begin{align*}
 \log\sum_d p(x,d) &\approx \log\sum_{d\in \tilde{D}} p(x,d)\\
